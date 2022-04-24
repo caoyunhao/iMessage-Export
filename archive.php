@@ -22,12 +22,13 @@ while($line = $query->fetch(PDO::FETCH_ASSOC)) {
   }
 
   $attachment_query = $db->query('SELECT attachment.*
-    FROM attachment 
+    FROM attachment
     JOIN message_attachment_join ON message_attachment_join.attachment_id=attachment.ROWID
     WHERE message_attachment_join.message_id = ' . $line['ROWID']);
   $attachments = array();
   while($attachment = $attachment_query->fetch(PDO::FETCH_ASSOC)) {
-    $attachments[] = $attachment;
+    if ($attachment['filename'])
+      $attachments[] = $attachment;
   }
 
   if(!entry_exists($line, $attachments, $fn)) {
@@ -35,12 +36,14 @@ while($line = $query->fetch(PDO::FETCH_ASSOC)) {
     $log = format_line($line, $attachments);
     fwrite($fp, $log."\n");
     fclose($fp);
-    echo date('c', $line['date']) . "\t" . $line['contact'] . "\t" . $line['text'] . "\n";
     foreach($attachments as $at) {
-      $imgsrc = attachment_folder($line['contact'], $line['date']) . $at['transfer_name'];
-      if(!file_exists(dirname($imgsrc))) 
+      $imgsrc = attachment_folder($line['contact'], $line['date']) . $at['guid'] . '-' . $at['transfer_name'];
+      if(!file_exists(dirname($imgsrc)))
         mkdir(dirname($imgsrc));
-      copy(str_replace('~/',$_SERVER['HOME'].'/',$at['filename']), $imgsrc);
+      $origin = str_replace('~/Library/Messages', $messages_root, $at['filename']);
+      if (file_exists($origin)) {
+        copy($origin, $imgsrc);
+      }
     }
   }
 

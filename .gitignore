@@ -1,4 +1,4 @@
-messages/*
+export/*
 .DS_Store
 contacts.txt
 last.txt
